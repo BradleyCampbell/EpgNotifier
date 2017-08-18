@@ -44,6 +44,48 @@ namespace EpgNotifier
             XmlDocument doc = new XmlDocument();
             doc.Load(_guideFileName);
 
+            List<XmlNode> desiredPrograms = GetDesiredPrograms(shows, doc);
+
+            var channelDict = GetChannelListing(doc);
+
+            var programIds = desiredPrograms.Select(p => p.Attributes["id"].Value);
+
+            GetChannelSchedulesForPrograms(programIds, doc);
+            
+        }
+
+        private static List<XmlNode> GetChannelSchedulesForPrograms(IEnumerable<string> programIds, XmlDocument doc)
+        {
+            var channelSchedules = doc.SelectNodes("/MXF/With/ScheduleEntries");
+            
+            var desiredSchedules = new List<XmlNode>();
+            for (int i = 0; i < channelSchedules.Count; i++)
+            {
+                var channelSchedule = channelSchedules[i];
+                for (int i = 0; i < channelSchedule.ChildNodes.Count; i++)
+                {
+                    var scheduleItem = channelSchedule.ChildNodes[i];
+                    if (programIds.Any(p => string.Equals(p, scheduleItem.Attributes["program"].Value, StringComparison.InvariantCultureIgnoreCase)))
+                        desiredSchedules.Add(channelSchedule);
+
+                }
+            }
+            return desiredSchedules;
+        }
+
+        private static Dictionary<string, string> GetChannelListing(XmlDocument doc)
+        {
+            var channels = doc.SelectNodes("/MXF/With/Lineups/Lineup/channels/Channel");
+            var channelDictionary = new Dictionary<string, string>();
+            for (int i = 0; i < channels.Count; i++)
+            {
+                channelDictionary.Add(channels[i].Attributes["service"].Value, channels[i].Attributes["number"].Value);
+            }
+            return channelDictionary;
+        }
+
+        private static List<XmlNode> GetDesiredPrograms(List<string> shows, XmlDocument doc)
+        {
             var programs = doc.SelectNodes("/MXF/With/Programs/Program");
             var desiredPrograms = new List<XmlNode>();
             for (int i = 0; i < programs.Count; i++)
@@ -53,8 +95,7 @@ namespace EpgNotifier
                     desiredPrograms.Add(program);
             }
 
-
-
+            return desiredPrograms;
         }
     }
 }
