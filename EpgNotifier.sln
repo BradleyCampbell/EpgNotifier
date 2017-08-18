@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.3
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EpgNotifier", "EpgNotifier\EpgNotifier.csproj", "{8D9E87D7-DDF4-4261-8E64-6FC4EB69FA0F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8D9E87D7-DDF4-4261-8E64-6FC4EB69FA0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D9E87D7-DDF4-4261-8E64-6FC4EB69FA0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D9E87D7-DDF4-4261-8E64-6FC4EB69FA0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D9E87D7-DDF4-4261-8E64-6FC4EB69FA0F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CEA58A4C-261B-4A46-9210-17FF24EF06AD}
+	EndGlobalSection
+EndGlobal
