@@ -6,6 +6,9 @@ using System.Xml;
 
 namespace EpgNotifier
 {
+    // Link to explanation of mxf xml schema
+    // https://msdn.microsoft.com/en-us/library/windows/desktop/dd776338.aspx?f=255&MSPPError=-2147217396#mxf_file_structure__ucad
+
     public class EpgNotifier
     {
         static string _showListFileName;
@@ -13,12 +16,35 @@ namespace EpgNotifier
 
         public static void Main(string[] args)
         {
+            if (!AreArgumentsValid(args))
+                return;
+
+            var shows = File.ReadAllLines(_showListFileName).ToList();
+
+            XmlDocument doc = new XmlDocument();
+            doc.Load(_guideFileName);
+
+            List<XmlNode> desiredPrograms = GetDesiredPrograms(shows, doc);
+
+            var channelDict = GetChannelListing(doc);
+
+            var programIds = desiredPrograms.Select(p => p.Attributes["id"].Value);
+            GetChannelSchedulesForPrograms(programIds, doc);
+            
+
+        }
+
+        private static bool AreArgumentsValid(string[] args)
+        {
+            if(args.Length < 4)
+                return false;
+
             var arg = Array.IndexOf(args, "-ShowList");
             if (arg != -1)
             {
                 if ((arg + 1) == args.Length)
                 {
-                    return;
+                    return false;
                 }
 
                 _showListFileName = args[arg + 1];
@@ -31,7 +57,7 @@ namespace EpgNotifier
             {
                 if ((arg + 1) == args.Length)
                 {
-                    return;
+                    return false;
                 }
 
                 _guideFileName = args[arg + 1];
@@ -39,19 +65,7 @@ namespace EpgNotifier
                 args[arg + 1] = null;
             }
 
-            var shows = File.ReadAllLines(_showListFileName).ToList();
-
-            XmlDocument doc = new XmlDocument();
-            doc.Load(_guideFileName);
-
-            List<XmlNode> desiredPrograms = GetDesiredPrograms(shows, doc);
-
-            var channelDict = GetChannelListing(doc);
-
-            var programIds = desiredPrograms.Select(p => p.Attributes["id"].Value);
-
-            GetChannelSchedulesForPrograms(programIds, doc);
-            
+            return true;
         }
 
         private static List<XmlNode> GetChannelSchedulesForPrograms(IEnumerable<string> programIds, XmlDocument doc)
