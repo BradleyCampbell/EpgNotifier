@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Mail;
+using System.Text;
 using System.Xml;
 
 namespace EpgNotifier
@@ -25,14 +26,47 @@ namespace EpgNotifier
             XmlDocument doc = new XmlDocument();
             doc.Load(_guideFileName);
 
-            List<XmlNode> desiredPrograms = GetDesiredPrograms(shows, doc);
+            var desiredPrograms = GetDesiredPrograms(shows, doc);
 
             var channelDict = GetChannelListing(doc);
 
-            var programIds = desiredPrograms.Select(p => p.Attributes["id"].Value);
-            GetChannelSchedulesForPrograms(programIds, doc);
-            
+            var programIds = desiredPrograms.Select(p => p.Id);
+            var desiredChannelSchedules = GetChannelSchedulesWithPrograms(programIds, doc);
 
+            var finalSchedules = new List<ChannelSchedule>();
+            foreach (var channelSchedule in desiredChannelSchedules)
+            {
+                var serviceId = channelSchedule.Attributes["service"].Value;
+                
+                finalSchedules.Add(BuildChannelSchedule(serviceId, channelDict[serviceId], channelSchedule.ChildNodes, desiredPrograms));
+            }
+
+            var sb = new StringBuilder();
+            foreach (var schedule in finalSchedules)
+            {
+                sb.AppendLine(schedule.ToString());
+            }
+            var body = sb.ToString();
+        }
+
+        public static ChannelSchedule BuildChannelSchedule(string serviceId, string channelNumber, XmlNodeList scheduleEntries, List<TvProgram> desiredShows)
+        {
+            var channelSchedule = new ChannelSchedule { ServiceId = serviceId, ChannelNumber = channelNumber, Schedule = new Dictionary<DateTime, TvProgram>() };
+            //startTime="2017-08-17T02:12:00"
+            var currentTime = DateTime.Parse(scheduleEntries[0].Attributes["startTime"].Value);
+            for (int i = 0; i < scheduleEntries.Count; i++)
+            {
+                var programId = scheduleEntries[i].Attributes["program"].Value;
+                var currentShow = desiredShows.FirstOrDefault(s => s.Id == programId);
+                if (currentShow != null)
+                {
+                    channelSchedule.Schedule.Add(new DateTime(currentTime.Ticks, DateTimeKind.Local), currentShow);
+                }
+
+                currentTime = currentTime.AddSeconds(Convert.ToInt32(scheduleEntries[i].Attributes["duration"].Value));
+            }
+
+            return channelSchedule;
         }
 
         private static bool AreArgumentsValid(string[] args)
@@ -81,11 +115,13 @@ namespace EpgNotifier
             }
 
             var tvPrograms = desiredPrograms.Select(dp => new TvProgram {
-                Id = Convert.ToInt32(dp.Attributes["id"].Value),
+                Id = dp.Attributes["id"].Value,
                 Title = dp.Attributes["title"].Value,
                 Season = GetSeasonNumberFromDescription(dp.Attributes["description"].Value),
                 Episode = GetEpisodeNumberFromDescription(dp.Attributes["description"].Value),
             });
+
+            return tvPrograms.ToList();
         }
 
         public static int GetSeasonNumberFromDescription(string description)
@@ -93,18 +129,27 @@ namespace EpgNotifier
             if (description == null)
                 return -1;
 
-            var index = description.IndexOf("&#xA;&#xA;Season ");
+            var index = description.IndexOf("\n\nSeason ");
             if (index == -1)
                 return -1;
 
-            var substring = description.Substring(index + 10);
-
-            return 
+            var substring = description.Substring(index);  // "Season N, Episode N"
+            var seasonNumber = substring.Substring(9, substring.IndexOf(",") - 9).Trim();
+            return Convert.ToInt32(seasonNumber);
         }
 
         public static int GetEpisodeNumberFromDescription(string description)
         {
-            
+            if (description == null)
+                return -1;
+
+            var index = description.IndexOf("\n\nSeason ");
+            if (index == -1)
+                return -1;
+
+            var substring = description.Substring(index);  // "Season N, Episode N"
+            var episodeNumber = substring.Substring(substring.IndexOf(",") + 10).Trim();
+            return Convert.ToInt32(episodeNumber);
         }
 
         private static Dictionary<string, string> GetChannelListing(XmlDocument doc)
@@ -113,12 +158,13 @@ namespace EpgNotifier
             var channelDictionary = new Dictionary<string, string>();
             for (int i = 0; i < channels.Count; i++)
             {
-                channelDictionary.Add(channels[i].Attributes["service"].Value, channels[i].Attributes["number"].Value);
+                if(Convert.ToInt32(channels[i].Attributes["number"].Value) >= 500)
+                    channelDictionary.Add(channels[i].Attributes["service"].Value, channels[i].Attributes["number"].Value);
             }
             return channelDictionary;
         }
 
-        private static List<XmlNode> GetChannelSchedulesForPrograms(IEnumerable<string> programIds, XmlDocument doc)
+        private static List<XmlNode> GetChannelSchedulesWithPrograms(IEnumerable<string> programIds, XmlDocument doc)
         {
             var channelSchedules = doc.SelectNodes("/MXF/With/ScheduleEntries");
 
@@ -130,8 +176,10 @@ namespace EpgNotifier
                 {
                     var scheduleItem = channelSchedule.ChildNodes[t];
                     if (programIds.Any(p => string.Equals(p, scheduleItem.Attributes["program"].Value, StringComparison.InvariantCultureIgnoreCase)))
+                    {
                         desiredSchedules.Add(channelSchedule);
-
+                        break;
+                    }
                 }
             }
             return desiredSchedules;
