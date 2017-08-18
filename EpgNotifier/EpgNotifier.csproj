@@ -47,6 +47,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="epg123.mxf" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ShowList.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
