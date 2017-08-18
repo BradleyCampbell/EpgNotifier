@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Mail;
 using System.Xml;
 
 namespace EpgNotifier
@@ -68,23 +69,42 @@ namespace EpgNotifier
             return true;
         }
 
-        private static List<XmlNode> GetChannelSchedulesForPrograms(IEnumerable<string> programIds, XmlDocument doc)
+        private static List<TvProgram> GetDesiredPrograms(List<string> shows, XmlDocument doc)
         {
-            var channelSchedules = doc.SelectNodes("/MXF/With/ScheduleEntries");
-            
-            var desiredSchedules = new List<XmlNode>();
-            for (int i = 0; i < channelSchedules.Count; i++)
+            var programs = doc.SelectNodes("/MXF/With/Programs/Program");
+            var desiredPrograms = new List<XmlNode>();
+            for (int i = 0; i < programs.Count; i++)
             {
-                var channelSchedule = channelSchedules[i];
-                for (int i = 0; i < channelSchedule.ChildNodes.Count; i++)
-                {
-                    var scheduleItem = channelSchedule.ChildNodes[i];
-                    if (programIds.Any(p => string.Equals(p, scheduleItem.Attributes["program"].Value, StringComparison.InvariantCultureIgnoreCase)))
-                        desiredSchedules.Add(channelSchedule);
-
-                }
+                var program = programs[i];
+                if (shows.Any(s => string.Equals(s, program.Attributes["title"].Value, StringComparison.InvariantCultureIgnoreCase)))
+                    desiredPrograms.Add(program);
             }
-            return desiredSchedules;
+
+            var tvPrograms = desiredPrograms.Select(dp => new TvProgram {
+                Id = Convert.ToInt32(dp.Attributes["id"].Value),
+                Title = dp.Attributes["title"].Value,
+                Season = GetSeasonNumberFromDescription(dp.Attributes["description"].Value),
+                Episode = GetEpisodeNumberFromDescription(dp.Attributes["description"].Value),
+            });
+        }
+
+        public static int GetSeasonNumberFromDescription(string description)
+        {
+            if (description == null)
+                return -1;
+
+            var index = description.IndexOf("&#xA;&#xA;Season ");
+            if (index == -1)
+                return -1;
+
+            var substring = description.Substring(index + 10);
+
+            return 
+        }
+
+        public static int GetEpisodeNumberFromDescription(string description)
+        {
+            
         }
 
         private static Dictionary<string, string> GetChannelListing(XmlDocument doc)
@@ -98,18 +118,42 @@ namespace EpgNotifier
             return channelDictionary;
         }
 
-        private static List<XmlNode> GetDesiredPrograms(List<string> shows, XmlDocument doc)
+        private static List<XmlNode> GetChannelSchedulesForPrograms(IEnumerable<string> programIds, XmlDocument doc)
         {
-            var programs = doc.SelectNodes("/MXF/With/Programs/Program");
-            var desiredPrograms = new List<XmlNode>();
-            for (int i = 0; i < programs.Count; i++)
-            {
-                var program = programs[i];
-                if (shows.Any(s => string.Equals(s, program.Attributes["title"].Value, StringComparison.InvariantCultureIgnoreCase)))
-                    desiredPrograms.Add(program);
-            }
+            var channelSchedules = doc.SelectNodes("/MXF/With/ScheduleEntries");
 
-            return desiredPrograms;
+            var desiredSchedules = new List<XmlNode>();
+            for (int i = 0; i < channelSchedules.Count; i++)
+            {
+                var channelSchedule = channelSchedules[i];
+                for (int t = 0; t < channelSchedule.ChildNodes.Count; t++)
+                {
+                    var scheduleItem = channelSchedule.ChildNodes[t];
+                    if (programIds.Any(p => string.Equals(p, scheduleItem.Attributes["program"].Value, StringComparison.InvariantCultureIgnoreCase)))
+                        desiredSchedules.Add(channelSchedule);
+
+                }
+            }
+            return desiredSchedules;
+        }
+
+        private static void EmailNotifications()
+        {
+            SmtpClient client = new SmtpClient
+            {
+                Port = 25,
+                DeliveryMethod = SmtpDeliveryMethod.Network,
+                UseDefaultCredentials = false,
+                Host = "smtp.google.com"
+            };
+
+            MailMessage mail = new MailMessage("bradleycampbell@gmail.com", "bradleycampbell@gmail.com")
+            {
+                Subject = "Upcoming Shows To Record",
+                Body = ""
+            };
+
+            client.Send(mail);
         }
     }
 }
