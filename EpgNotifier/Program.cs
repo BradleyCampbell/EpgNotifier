@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -32,10 +33,20 @@ namespace EpgNotifier
             var applicableSchedules = mxfParser.GetSchedulesOfPrograms(tvPrograms);
 
             var sb = new StringBuilder();
+            sb.AppendLine("Summary:");
+            foreach(var show in tvPrograms.Distinct().OrderBy(t => t.Title).ThenBy(t => t.SeasonNumber).ThenBy(t => t.EpisodeNumber))
+            {
+                sb.AppendLine(show.ToString());
+            }
+
+
+            sb.AppendLine().AppendLine("Schedule:");
             foreach (var schedule in applicableSchedules)
             {
                 sb.AppendLine(schedule.ToString());
             }
+
+            Console.WriteLine(sb.ToString());
 
             EmailNotifications(sb.ToString());
         }

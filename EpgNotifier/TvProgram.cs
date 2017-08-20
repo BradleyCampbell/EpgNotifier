@@ -21,5 +21,14 @@ namespace EpgNotifier
         {
             return $"{Title} - {SeasonNumber}x{EpisodeNumber}";
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+                return false;
+
+            TvProgram p = (TvProgram)obj;
+            return (Title == p.Title) && (EpisodeNumber == p.EpisodeNumber) && (SeasonNumber == p.SeasonNumber);
+        }
     }
 }
