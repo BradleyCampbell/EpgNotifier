@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 
 namespace EpgNotifier
 {
@@ -7,12 +8,18 @@ namespace EpgNotifier
     {
         public string Id { get; set; }
         public string Title { get; set; }
-        public int Season { get; set; }
-        public int Episode { get; set; }
+        public int SeasonNumber { get; set; }
+        public int EpisodeNumber { get; set; }
+        public string EpisodeTitle { get; set; }
+        public string ShortDescription { get; set; }
+        public string Description { get; set; }
+        public int Year { get; set; }
+        public DateTime OriginalAirDate { get; set; }
+
 
         public override string ToString()
         {
-            return $"{Title} - {Season}x{Episode}";
+            return $"{Title} - {SeasonNumber}x{EpisodeNumber}";
         }
     }
 }

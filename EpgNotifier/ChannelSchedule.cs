@@ -15,7 +15,7 @@ namespace EpgNotifier
             var sb = new StringBuilder($"Channel Number: {ChannelNumber}").AppendLine();
             foreach (var time in Schedule.Keys)
             {
-                sb.AppendLine($"     {time.ToString("G")} - {Schedule[time].ToString()}");
+                sb.AppendLine($"     {time.ToLocalTime().ToString("G")} - {Schedule[time].ToString()}");
             }
             return sb.ToString();
         }
