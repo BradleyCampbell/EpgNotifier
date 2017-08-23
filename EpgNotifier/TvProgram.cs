@@ -19,7 +19,14 @@ namespace EpgNotifier
 
         public override string ToString()
         {
-            return $"{Title} - {SeasonNumber}x{EpisodeNumber}";
+            var returnMe = Title;
+            if (SeasonNumber != -1)
+            {
+                returnMe += $" - {SeasonNumber}";
+                if (EpisodeNumber != -1)
+                    returnMe += $"x{EpisodeNumber}";
+            }
+            return returnMe;
         }
 
         public override bool Equals(object obj)

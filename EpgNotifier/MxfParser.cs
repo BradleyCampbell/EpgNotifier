@@ -41,6 +41,31 @@ namespace EpgNotifier
             return tvPrograms.ToList();
         }
 
+        public List<TvProgram> GetAllPrograms()
+        {
+            var programs = mxfDoc.SelectNodes("/MXF/With/Programs/Program");
+            var desiredPrograms = new List<XmlNode>();
+            for (int i = 0; i < programs.Count; i++)
+            {
+                desiredPrograms.Add(programs[i]);
+            }
+
+            var tvPrograms = desiredPrograms.Where(p => p.Attributes["title"] != null).Select(dp => new TvProgram
+            {
+                Id = dp.Attributes["id"].Value,
+                Title = dp.Attributes["title"].Value,
+                EpisodeTitle = dp.Attributes["episodeTitle"] != null ? dp.Attributes["episodeTitle"].Value : string.Empty,
+                ShortDescription = dp.Attributes["shortDescription"] != null ? dp.Attributes["shortDescription"].Value : string.Empty,
+                Description = dp.Attributes["description"] != null ? dp.Attributes["description"].Value : string.Empty,
+                Year = dp.Attributes["year"] != null ? Convert.ToInt32(dp.Attributes["year"].Value) : -1,
+                OriginalAirDate = dp.Attributes["originalAirdate"] != null ? DateTime.Parse(dp.Attributes["originalAirdate"].Value) : DateTime.MinValue,
+                SeasonNumber = dp.Attributes["seasonNumber"] != null ? Convert.ToInt32(dp.Attributes["seasonNumber"].Value) : -1,
+                EpisodeNumber = dp.Attributes["episodeNumber"] != null ? Convert.ToInt32(dp.Attributes["episodeNumber"].Value) : -1,
+            });
+
+            return tvPrograms.ToList();
+        }
+
         public int GetSeasonNumberFromDescription(string description)
         {
             if (description == null)
@@ -114,7 +139,46 @@ namespace EpgNotifier
             return finalSchedules;
         }
 
-        public static ChannelSchedule BuildChannelSchedule(string serviceId, string channelNumber, XmlNodeList scheduleEntries, IEnumerable<TvProgram> desiredShows)
+        public ChannelSchedule GetChannelSchedule(string channelNumber)
+        {
+            var channelDict = GetChannelListing();
+            var programs = GetAllPrograms();
+            var serviceId = channelDict.First(c => c.Value == channelNumber).Key;
+
+            ChannelSchedule channelSchedule = new ChannelSchedule { ServiceId = serviceId, ChannelNumber = channelNumber, Schedule = new Dictionary<DateTime, TvProgram>() };
+
+            var channelNodes = mxfDoc.SelectNodes("/MXF/With/ScheduleEntries");
+            for (int i = 0; i < channelNodes.Count; i++)
+            {
+                if (!string.Equals(channelNodes[i].Attributes["service"].Value, serviceId)) continue;
+                return BuildChannelSchedule(serviceId, channelNumber, channelNodes[i].ChildNodes, programs);
+            }
+
+            return channelSchedule;
+        }
+
+        public List<ChannelSchedule> GetChannelSchedules(IEnumerable<string> channelNumbers)
+        {
+            var channelDict = GetChannelListing();
+            var programs = GetAllPrograms();
+            var channelNodes = mxfDoc.SelectNodes("/MXF/With/ScheduleEntries");
+
+            var desiredServiceIds = channelDict.Where(c => channelNumbers.Contains(c.Value)).Select(c => c.Key);
+            var channelSchedules = new List<ChannelSchedule>();
+
+            for (int i = 0; i < channelNodes.Count; i++)
+            {
+                var serviceId = channelNodes[i].Attributes["service"].Value;
+                if (!desiredServiceIds.Contains(serviceId)) continue;
+
+                var channelNumber = channelDict[serviceId];
+                channelSchedules.Add(BuildChannelSchedule(serviceId, channelNumber, channelNodes[i].ChildNodes, programs));
+            }
+            
+            return channelSchedules;
+        }
+
+        private static ChannelSchedule BuildChannelSchedule(string serviceId, string channelNumber, XmlNodeList scheduleEntries, IEnumerable<TvProgram> desiredShows)
         {
             var channelSchedule = new ChannelSchedule { ServiceId = serviceId, ChannelNumber = channelNumber, Schedule = new Dictionary<DateTime, TvProgram>() };
             //startTime="2017-08-17T02:12:00"  UTC

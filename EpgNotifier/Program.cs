@@ -21,23 +21,32 @@ namespace EpgNotifier
         private static bool _showSummary;
         private static bool _schedule;
         private static bool _scheduleFirstOnly;
+        private static IEnumerable<string> _desiredChannels;
+        private static bool _channelSchedules;
 
         public static void Main(string[] args)
         {
             if (!AreArgumentsValid(args))
                 return;
 
-            var shows = File.ReadAllLines(_showListFileName).ToList();
-
             XmlDocument doc = new XmlDocument();
             doc.Load(_guideFileName);
 
             var mxfParser = new MxfParser(doc);
+            var sb = new StringBuilder();
 
+            if (_channelSchedules)
+            {
+                var schedules = mxfParser.GetChannelSchedules(_desiredChannels);
+                AddSchedule(schedules, sb);
+                Console.WriteLine(sb.ToString());
+            }
+
+            var shows = File.ReadAllLines(_showListFileName).ToList();
             var tvPrograms = mxfParser.GetDesiredPrograms(shows);
             var applicableSchedules = mxfParser.GetSchedulesOfPrograms(tvPrograms);
 
-            var sb = new StringBuilder();
+            
 
             if (_showSummary)
             {
@@ -59,9 +68,15 @@ namespace EpgNotifier
                 AddSchedule(applicableSchedules, sb);
             }
 
+           
             Console.WriteLine(sb.ToString());
 
             EmailNotifications(sb.ToString());
+        }
+
+        private static void AddChannelSchedule(List<ChannelSchedule> schedules, StringBuilder sb)
+        {
+            throw new NotImplementedException();
         }
 
         private static void AddScheduleFistOnly(List<ChannelSchedule> applicableSchedules, StringBuilder sb)
@@ -156,6 +171,22 @@ namespace EpgNotifier
             if (arg != -1)
             {
                 _scheduleFirstOnly = true;
+                args[arg] = null;
+            }
+
+            arg = Array.IndexOf(args, "-ChannelSchedules");
+            if (arg != -1)
+            {
+                if ((arg + 1) == args.Length)
+                {
+                    return false;
+                }
+
+                _desiredChannels = args[arg + 1].Split(',') ;
+                args[arg] = null;
+                args[arg + 1] = null;
+
+                _channelSchedules = true;
                 args[arg] = null;
             }
 
