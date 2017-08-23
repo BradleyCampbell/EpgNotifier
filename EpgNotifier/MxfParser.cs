@@ -157,7 +157,7 @@ namespace EpgNotifier
             return channelSchedule;
         }
 
-        public List<ChannelSchedule> GetChannelSchedules(IEnumerable<string> channelNumbers)
+        public List<ChannelSchedule> GetChannelSchedules(IEnumerable<string> channelNumbers, bool distinctShows)
         {
             var channelDict = GetChannelListing();
             var programs = GetAllPrograms();

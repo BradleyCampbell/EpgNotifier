@@ -19,7 +19,7 @@ namespace EpgNotifier
         static string _guideFileName;
         private static bool _episodeSummary;
         private static bool _showSummary;
-        private static bool _schedule;
+        private static bool _showSchedule;
         private static bool _scheduleFirstOnly;
         private static IEnumerable<string> _desiredChannels;
         private static bool _channelSchedules;
@@ -35,48 +35,49 @@ namespace EpgNotifier
             var mxfParser = new MxfParser(doc);
             var sb = new StringBuilder();
 
+
+            if (_showListFileName != null)
+            {
+                var shows = File.ReadAllLines(_showListFileName).ToList();
+                var tvPrograms = mxfParser.GetDesiredPrograms(shows);
+                var applicableSchedules = mxfParser.GetSchedulesOfPrograms(tvPrograms);
+
+                if (_showSummary)
+                {
+                    AddShowSummary(tvPrograms, sb);
+                }
+
+                if (_episodeSummary)
+                {
+                    AddEpisodeSummary(tvPrograms, sb);
+                }
+
+                if (_scheduleFirstOnly)
+                {
+                    AddScheduleFistOnly(applicableSchedules, sb);
+                }
+
+                if (_showSchedule)
+                {
+                    AddSchedule(applicableSchedules, sb);
+                }
+
+            }
+
             if (_channelSchedules)
             {
-                var schedules = mxfParser.GetChannelSchedules(_desiredChannels);
-                AddSchedule(schedules, sb);
-                Console.WriteLine(sb.ToString());
+                AddChannelSchedule(mxfParser, sb);
             }
 
-            var shows = File.ReadAllLines(_showListFileName).ToList();
-            var tvPrograms = mxfParser.GetDesiredPrograms(shows);
-            var applicableSchedules = mxfParser.GetSchedulesOfPrograms(tvPrograms);
-
-            
-
-            if (_showSummary)
-            {
-                AddShowSummary(tvPrograms, sb);
-            }
-
-            if (_episodeSummary)
-            {
-                AddEpisodeSummary(tvPrograms, sb);
-            }
-
-            if (_scheduleFirstOnly)
-            {
-                AddScheduleFistOnly(applicableSchedules, sb);
-            }
-
-            if (_schedule)
-            {
-                AddSchedule(applicableSchedules, sb);
-            }
-
-           
             Console.WriteLine(sb.ToString());
 
             EmailNotifications(sb.ToString());
         }
 
-        private static void AddChannelSchedule(List<ChannelSchedule> schedules, StringBuilder sb)
+        private static void AddChannelSchedule(MxfParser mxfParser, StringBuilder sb)
         {
-            throw new NotImplementedException();
+            var schedules = mxfParser.GetChannelSchedules(_desiredChannels, false);
+            AddSchedule(schedules, sb);
         }
 
         private static void AddScheduleFistOnly(List<ChannelSchedule> applicableSchedules, StringBuilder sb)
@@ -163,7 +164,7 @@ namespace EpgNotifier
             arg = Array.IndexOf(args, "-Schedule");
             if (arg != -1)
             {
-                _schedule = true;
+                _showSchedule = true;
                 args[arg] = null;
             }
 

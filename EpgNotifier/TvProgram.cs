@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace EpgNotifier
@@ -36,6 +37,15 @@ namespace EpgNotifier
 
             TvProgram p = (TvProgram)obj;
             return (Title == p.Title) && (EpisodeNumber == p.EpisodeNumber) && (SeasonNumber == p.SeasonNumber);
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = -594151479;
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Title);
+            hashCode = hashCode * -1521134295 + SeasonNumber.GetHashCode();
+            hashCode = hashCode * -1521134295 + EpisodeNumber.GetHashCode();
+            return hashCode;
         }
     }
 }
