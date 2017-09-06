@@ -10,6 +10,6 @@ The Great Christmas Light Fight
 The Expanse
 The Magicians
 The White Queen
-Black Sails
+Black Sails,2
 Ash vs Evil Dead
-Outlander
+Outlander,3

@@ -38,7 +38,14 @@ namespace EpgNotifier
 
             if (_showListFileName != null)
             {
-                var shows = File.ReadAllLines(_showListFileName).ToList();
+                var showLines = File.ReadAllLines(_showListFileName).ToList();
+                var shows = new List<Tuple<string, int>>();
+                foreach(var showLine in showLines)
+                {
+                    var temp = showLine.Split(',');
+                    var season = temp.Length > 1 ? int.Parse(temp[1]) : -1;
+                    shows.Add(new Tuple<string, int>(temp[0], season));
+                }
                 var tvPrograms = mxfParser.GetDesiredPrograms(shows);
                 var applicableSchedules = mxfParser.GetSchedulesOfPrograms(tvPrograms);
 

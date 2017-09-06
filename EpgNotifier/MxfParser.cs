@@ -14,15 +14,18 @@ namespace EpgNotifier
             mxfDoc = doc;
         }
 
-        public List<TvProgram> GetDesiredPrograms(List<string> shows)
+        public List<TvProgram> GetDesiredPrograms(List<Tuple<string,int>> shows)
         {
             var programs = mxfDoc.SelectNodes("/MXF/With/Programs/Program");
             var desiredPrograms = new List<XmlNode>();
             for (int i = 0; i < programs.Count; i++)
             {
                 var program = programs[i];
-                if (shows.Any(s => string.Equals(s, program.Attributes["title"].Value, StringComparison.InvariantCultureIgnoreCase)))
+                if (shows.Any(s => string.Equals(s.Item1, program.Attributes["title"].Value, StringComparison.InvariantCultureIgnoreCase)
+                                    && (s.Item2 < 0 || program.Attributes["seasonNumber"] != null && Convert.ToInt32(program.Attributes["seasonNumber"].Value) == s.Item2)))
+                {
                     desiredPrograms.Add(program);
+                }
             }
 
             var tvPrograms = desiredPrograms.Select(dp => new TvProgram
