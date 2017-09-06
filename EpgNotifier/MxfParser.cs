@@ -9,48 +9,28 @@ namespace EpgNotifier
     {
         private XmlDocument mxfDoc;
 
+        private List<TvProgram> programs = new List<TvProgram>();
+
         public MxfParser(XmlDocument doc)
         {
             mxfDoc = doc;
         }
 
-        public List<TvProgram> GetDesiredPrograms(List<Tuple<string,int>> shows)
+        public List<TvProgram> GetDesiredPrograms(List<string> shows)
         {
-            var programs = mxfDoc.SelectNodes("/MXF/With/Programs/Program");
-            var desiredPrograms = new List<XmlNode>();
-            for (int i = 0; i < programs.Count; i++)
-            {
-                var program = programs[i];
-                if (shows.Any(s => string.Equals(s.Item1, program.Attributes["title"].Value, StringComparison.InvariantCultureIgnoreCase)
-                                    && (s.Item2 < 0 || program.Attributes["seasonNumber"] != null && Convert.ToInt32(program.Attributes["seasonNumber"].Value) == s.Item2)))
-                {
-                    desiredPrograms.Add(program);
-                }
-            }
-
-            var tvPrograms = desiredPrograms.Select(dp => new TvProgram
-            {
-                Id = dp.Attributes["id"].Value,
-                Title = dp.Attributes["title"].Value,
-                EpisodeTitle = dp.Attributes["episodeTitle"].Value,
-                ShortDescription = dp.Attributes["shortDescription"].Value,
-                Description = dp.Attributes["description"].Value,
-                Year = dp.Attributes["year"] != null ? Convert.ToInt32(dp.Attributes["year"].Value) : -1,
-                OriginalAirDate = dp.Attributes["originalAirdate"] != null ? DateTime.Parse(dp.Attributes["originalAirdate"].Value) : DateTime.MinValue,
-                SeasonNumber = dp.Attributes["seasonNumber"] != null ? Convert.ToInt32(dp.Attributes["seasonNumber"].Value) : -1,
-                EpisodeNumber = dp.Attributes["episodeNumber"] != null ? Convert.ToInt32(dp.Attributes["episodeNumber"].Value) : -1,
-            });
-
-            return tvPrograms.ToList();
+            if (programs.Any()) return programs.Where(p => shows.Contains(p.Title)).ToList();
+            programs = GetAllPrograms();
+            return programs.Where(p => shows.Contains(p.Title)).ToList();
         }
 
         public List<TvProgram> GetAllPrograms()
         {
-            var programs = mxfDoc.SelectNodes("/MXF/With/Programs/Program");
+            if(programs.Any()) return programs;
+            var allPrograms = mxfDoc.SelectNodes("/MXF/With/Programs/Program");
             var desiredPrograms = new List<XmlNode>();
-            for (int i = 0; i < programs.Count; i++)
+            for (int i = 0; i < allPrograms.Count; i++)
             {
-                desiredPrograms.Add(programs[i]);
+                desiredPrograms.Add(allPrograms[i]);
             }
 
             var tvPrograms = desiredPrograms.Where(p => p.Attributes["title"] != null).Select(dp => new TvProgram
@@ -66,7 +46,8 @@ namespace EpgNotifier
                 EpisodeNumber = dp.Attributes["episodeNumber"] != null ? Convert.ToInt32(dp.Attributes["episodeNumber"].Value) : -1,
             });
 
-            return tvPrograms.ToList();
+            programs = tvPrograms.ToList();
+            return programs;
         }
 
         public int GetSeasonNumberFromDescription(string description)
