@@ -1,8 +1,6 @@
 ﻿Dirk Gently's Holistic Detective 
-The Good Place
 Timeless
 Mr. Robot
-The Walking Dead
 The 100
 Once Upon a Time
 Into the Badlands
@@ -10,6 +8,6 @@ The Great Christmas Light Fight
 The Expanse
 The Magicians
 The White Queen
-Black Sails
+Black Sails,2
 Ash vs Evil Dead
-Outlander
+Outlander,3

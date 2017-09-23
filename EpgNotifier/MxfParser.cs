@@ -16,11 +16,11 @@ namespace EpgNotifier
             mxfDoc = doc;
         }
 
-        public List<TvProgram> GetDesiredPrograms(List<string> shows)
+        public List<TvProgram> GetDesiredPrograms(List<Tuple<string, int>> shows)
         {
-            if (programs.Any()) return programs.Where(p => shows.Contains(p.Title)).ToList();
+            if (programs.Any()) return programs.Where(p => shows.Any(s => s.Item1 == p.Title && (s.Item2 < 0 || p.SeasonNumber < 0 || s.Item2 == p.SeasonNumber))).ToList();
             programs = GetAllPrograms();
-            return programs.Where(p => shows.Contains(p.Title)).ToList();
+            return programs.Where(p => shows.Any(s => s.Item1 == p.Title && (s.Item2 < 0 || p.SeasonNumber < 0 || s.Item2 == p.SeasonNumber))).ToList();
         }
 
         public List<TvProgram> GetAllPrograms()
