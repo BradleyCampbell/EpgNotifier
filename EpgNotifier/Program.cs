@@ -78,7 +78,7 @@ namespace EpgNotifier
 
             Console.WriteLine(sb.ToString());
 
-            EmailNotifications(sb.ToString());
+            Console.ReadLine();
         }
 
         private static void AddChannelSchedule(MxfParser mxfParser, StringBuilder sb)
@@ -201,25 +201,5 @@ namespace EpgNotifier
             return true;
         }
 
-        private static void EmailNotifications(string body)
-        {
-            SmtpClient client = new SmtpClient
-            {
-                Port = 587,
-                DeliveryMethod = SmtpDeliveryMethod.Network,
-                UseDefaultCredentials = false,
-                Host = "smtp.gmail.com",
-                Credentials = new NetworkCredential("username", "password"),
-                EnableSsl = true
-            };
-
-            MailMessage mail = new MailMessage("bradleycampbell@gmail.com", "bradleycampbell@gmail.com")
-            {
-                Subject = "Upcoming Shows To Record",
-                Body = body
-            };
-
-            client.Send(mail);
-        }
     }
 }
